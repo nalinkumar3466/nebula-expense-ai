@@ -25,7 +25,8 @@
     "react-dom": "19.2.3",
     "recharts": "^3.8.0",
     "tesseract.js": "^5.1.0",
-    "zod": "^4.3.6"
+    "zod": "^4.3.6",
+    "zod-to-json-schema": "^3.25.1"
   },
   "devDependencies": {
     "@swc/jest": "^0.2.39",

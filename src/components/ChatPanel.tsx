@@ -48,11 +48,13 @@ export function ChatPanel() {
       setMessages(prev => [...prev, {
         id: Date.now().toString(),
         role: "assistant",
-        content: data.reply || data.message || "I received your message but didn't get a proper response."
+        content: data.reply || "I received your message but didn't get a proper response."
       }]);
       
-      // Trigger expense update event
-      window.dispatchEvent(new Event('expense-updated'));
+      // Trigger expense update event for dashboard refresh
+      setTimeout(() => {
+        window.dispatchEvent(new Event('expense-updated'));
+      }, 1000);
       
     } catch (error) {
       console.error('Error sending message:', error);

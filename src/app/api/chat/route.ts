@@ -1,44 +1,188 @@
 // @ts-nocheck
 import { NextResponse } from "next/server";
-import { openai } from "@ai-sdk/openai";
-import { generateText, tool } from "ai";
+import OpenAI from "openai";
 import { z } from "zod";
+import { zodToJsonSchema } from "zod-to-json-schema";
 
 import prisma from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
-import {
-  detectRecurringExpense,
-  getLearnedMerchantDefaults,
-  updateMerchantProfileFromExpense,
-} from "@/lib/expense-insights";
 
-function getMonthRange(offsetMonths = 0) {
-  const now = new Date();
-  const month = now.getMonth() + offsetMonths;
-  const year = now.getFullYear();
-  const start = new Date(year, month, 1);
-  const end = new Date(year, month + 1, 0, 23, 59, 59, 999);
-  return { start, end };
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+// Helper functions for expense operations
+async function addExpenses(user: any, expenses: any[]) {
+  try {
+    const results = [];
+    let totalAdded = 0;
+    
+    for (const item of expenses) {
+      // Simple category creation/retrieval
+      let category = await prisma.category.findFirst({
+        where: {
+          name: item.category,
+          OR: [{ userId: user.id }, { userId: null }],
+        },
+      });
+
+      if (!category) {
+        category = await prisma.category.create({
+          data: {
+            name: item.category,
+            type: "expense",
+            userId: user.id,
+          },
+        });
+      }
+
+      const expense = await prisma.expense.create({
+        data: {
+          userId: user.id,
+          amount: item.amount,
+          date: new Date(item.dateIso),
+          description: item.description,
+          merchant: item.merchant || null,
+          categoryId: category.id,
+          currency: item.currency || "INR",
+        },
+      });
+
+      results.push({ 
+        id: expense.id, 
+        amount: expense.amount, 
+        description: expense.description,
+        date: expense.date.toISOString().split('T')[0]
+      });
+      totalAdded += expense.amount;
+    }
+
+    return { 
+      success: true, 
+      message: `Successfully added ${results.length} expense(s) totaling ₹${totalAdded.toFixed(2)}`,
+      expenses: results
+    };
+  } catch (error) {
+    console.error("Add expenses error:", error);
+    return { success: false, message: "Failed to add expenses" };
+  }
 }
 
-function getWeekRange(offsetWeeks = 0) {
-  const now = new Date();
-  const day = now.getDay() || 7;
-  const start = new Date(
-    now.getFullYear(),
-    now.getMonth(),
-    now.getDate() - day + 1 + offsetWeeks * 7,
-  );
-  const end = new Date(
-    start.getFullYear(),
-    start.getMonth(),
-    start.getDate() + 6,
-    23,
-    59,
-    59,
-    999,
-  );
-  return { start, end };
+async function queryExpenses(user: any, timeframe: string = "this_month") {
+  try {
+    const now = new Date();
+    let startDate, endDate;
+
+    if (timeframe === "this_month") {
+      startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+      endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+    } else if (timeframe === "last_month") {
+      startDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      endDate = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
+    } else if (timeframe === "this_week") {
+      const day = now.getDay() || 7;
+      startDate = new Date(now);
+      startDate.setDate(now.getDate() - day + 1);
+      endDate = new Date(startDate);
+      endDate.setDate(startDate.getDate() + 6);
+      endDate.setHours(23, 59, 59);
+    } else if (timeframe === "last_week") {
+      const day = now.getDay() || 7;
+      endDate = new Date(now);
+      endDate.setDate(now.getDate() - day);
+      startDate = new Date(endDate);
+      startDate.setDate(endDate.getDate() - 6);
+    } else {
+      startDate = new Date("2000-01-01");
+      endDate = new Date("2099-12-31");
+    }
+
+    const expenses = await prisma.expense.findMany({
+      where: {
+        userId: user.id,
+        date: {
+          gte: startDate,
+          lte: endDate,
+        },
+      },
+      include: { category: true },
+      orderBy: { date: "desc" },
+    });
+
+    const total = expenses.reduce((sum, exp) => sum + exp.amount, 0);
+    
+    return { 
+      success: true, 
+      total,
+      count: expenses.length,
+      message: `Found ${expenses.length} expenses totaling ₹${total.toFixed(2)} for ${timeframe.replace('_', ' ')}`
+    };
+  } catch (error) {
+    console.error("Query expenses error:", error);
+    return { success: false, message: "Failed to query expenses" };
+  }
+}
+
+// Function to extract expense data from user message
+async function extractExpenseData(message: string, user: any) {
+  try {
+    // Define schema for expense extraction
+    const expenseSchema = z.object({
+      expenses: z.array(z.object({
+        amount: z.number(),
+        merchant: z.string().optional(),
+        description: z.string(),
+        category: z.string(),
+        dateIso: z.string(),
+      }))
+    });
+
+    const currentDate = new Date().toISOString().split('T')[0];
+    
+    const prompt = `Extract expense information from this message: "${message}"
+    
+Current date: ${currentDate}
+
+Respond ONLY with valid JSON in this exact format:
+{
+  "expenses": [
+    {
+      "amount": 50.0,
+      "merchant": "Store Name",
+      "description": "What was bought",
+      "category": "Food",
+      "dateIso": "2024-01-15"
+    }
+  ]
+}
+
+Common categories: Food, Transport, Entertainment, Bills, Shopping, Healthcare
+For dates: "today" = ${currentDate}, "yesterday" = ${new Date(Date.now() - 86400000).toISOString().split('T')[0]}`;
+
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        { role: "system", content: "You extract structured data from natural language." },
+        { role: "user", content: prompt }
+      ],
+      temperature: 0,
+    });
+
+    const response = completion.choices[0]?.message?.content || "";
+    
+    // Try to parse the JSON response
+    try {
+      const jsonData = JSON.parse(response);
+      return jsonData;
+    } catch (parseError) {
+      console.error("JSON Parse Error:", parseError);
+      return null;
+    }
+    
+  } catch (error) {
+    console.error("Expense extraction error:", error);
+    return null;
+  }
 }
 
 export async function POST(request: Request) {
@@ -57,266 +201,91 @@ export async function POST(request: Request) {
       );
     }
 
-    const systemInstruction = `
-      You are Nebula Expense AI, a helpful and conversational personal finance assistant.
-      Your job is to help the user manage their expenses, query their spending, and provide insights.
-      When users mention expenses, try to extract amount, category, merchant, date, and description.
-      Use natural, conversational language. Keep answers concise.
-      Current date: ${new Date().toISOString().slice(0, 10)}.
-    `;
+    const lastUserMessage = messages.filter((m: any) => m.role === "user").pop();
+    if (!lastUserMessage) {
+      throw new Error("No user message found");
+    }
 
-    // Define tools using the correct AI SDK format with zod schemas
-    const tools = {
-      add_expenses: tool({
-        description: "Add one or more expenses for the user.",
-        parameters: z.object({
-          expenses: z.array(
-            z.object({
-              amount: z.number().describe("The cost of the expense"),
-              merchant: z.string().optional().describe("Where the expense occurred"),
-              description: z.string().describe("What the expense was for"),
-              category: z.string().describe("The category like Food, Transport, Bills"),
-              dateIso: z.string().describe("YYYY-MM-DD date of the expense"),
-              currency: z.enum(["INR", "USD", "EUR", "GBP"]).default("INR"),
-            })
-          ),
-        }),
-        execute: async ({ expenses }) => {
-          try {
-            const results = [];
-            let totalAdded = 0;
-            
-            for (const item of expenses) {
-              const categoryName = item.category.charAt(0).toUpperCase() + item.category.slice(1);
-              
-              let category = await prisma.category.findFirst({
-                where: {
-                  name: categoryName,
-                  OR: [{ userId: user.id }, { userId: null }],
-                },
-              });
+    const userMessage = lastUserMessage.content.toLowerCase();
 
-              if (!category) {
-                category = await prisma.category.create({
-                  data: {
-                    name: categoryName,
-                    type: "expense",
-                    userId: user.id,
-                  },
-                });
-              }
+    // Check if this is an expense-related message
+    const expenseKeywords = ["spent", "expense", "cost", "paid", "bought", "purchase"];
+    const queryKeywords = ["how much", "total", "spent on", "expenses", "show me", "list"];
+    
+    let reply = "";
+    let shouldRefresh = false;
 
-              const learned = await getLearnedMerchantDefaults({
-                userId: user.id,
-                merchant: item.merchant ?? undefined,
-              });
+    if (expenseKeywords.some(keyword => userMessage.includes(keyword))) {
+      // Try to extract expense data
+      const extractedData = await extractExpenseData(lastUserMessage.content, user);
+      
+      if (extractedData?.expenses?.length > 0) {
+        // Add expenses to database
+        const result = await addExpenses(user, extractedData.expenses);
+        reply = result.message;
+        shouldRefresh = result.success;
+      } else {
+        reply = "I understood you mentioned an expense. Could you provide more details like amount and what it was for?";
+      }
+    } else if (queryKeywords.some(keyword => userMessage.includes(keyword))) {
+      // Handle query requests
+      let timeframe = "this_month";
+      if (userMessage.includes("week")) timeframe = "this_week";
+      if (userMessage.includes("month")) timeframe = "this_month";
+      
+      const result = await queryExpenses(user, timeframe);
+      reply = result.message;
+    } else {
+      // General conversation - use OpenAI
+      const systemMessage = {
+        role: "system",
+        content: `You are Nebula Expense AI, a helpful finance assistant. 
+        Help users track expenses through conversation.
+        When they mention spending money, acknowledge it and be helpful.
+        Current date: ${new Date().toISOString().split('T')[0]}.
+        
+        Examples of valid requests:
+        - "I spent $50 on groceries yesterday" 
+        - "Show me my expenses this month"
+        - "How much did I spend on food?"
+        
+        Always respond in a helpful, conversational way.`
+      };
 
-              const baseExpense = await prisma.expense.create({
-                data: {
-                  userId: user.id,
-                  amount: item.amount,
-                  date: new Date(item.dateIso),
-                  description: item.description,
-                  merchant: item.merchant,
-                  categoryId: learned.categoryId ?? category.id,
-                  currency: item.currency || "INR",
-                },
-              });
+      const allMessages = [systemMessage, ...messages];
 
-              const recurringInfo = await detectRecurringExpense({
-                userId: user.id,
-                merchant: baseExpense.merchant,
-                amount: baseExpense.amount,
-                date: baseExpense.date,
-              });
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: allMessages.map(msg => ({
+          role: msg.role,
+          content: msg.content
+        })),
+        temperature: 0.7,
+      });
 
-              const expense = await prisma.expense.update({
-                where: { id: baseExpense.id },
-                data: {
-                  isRecurring: recurringInfo.isRecurring,
-                  recurringRule: recurringInfo.recurringRule ?? undefined,
-                },
-              });
+      reply = completion.choices[0]?.message?.content || "I'm here to help you track your expenses!";
+    }
 
-              await updateMerchantProfileFromExpense({
-                userId: user.id,
-                merchant: expense.merchant,
-                categoryId: expense.categoryId,
-                recurringLikely: recurringInfo.isRecurring || learned.recurringLikely,
-              });
+    // Trigger dashboard refresh if needed
+    if (shouldRefresh) {
+      // This will be handled by the frontend
+    }
 
-              results.push({ id: expense.id, amount: item.amount, description: item.description });
-              totalAdded += item.amount;
-            }
-
-            return { success: true, addedCount: results.length, totalAmountAdded: totalAdded, expenses: results };
-          } catch (error) {
-            console.error("Add expenses error:", error);
-            return { success: false, error: "Failed to add expenses" };
-          }
-        },
-      }),
-
-      query_expenses: tool({
-        description: "Get expenses within a timeframe, filtered by category or keyword.",
-        parameters: z.object({
-          timeframe: z.enum(["this_week", "last_week", "this_month", "last_month", "all_time"]).default("this_month"),
-          categoryOrKeyword: z.string().optional(),
-          limit: z.number().default(10),
-          returnList: z.boolean().default(false),
-        }),
-        execute: async ({ timeframe, categoryOrKeyword, limit, returnList }) => {
-          try {
-            let start: Date;
-            let end: Date;
-
-            if (timeframe === "this_month") { ({ start, end } = getMonthRange(0)); }
-            else if (timeframe === "last_month") { ({ start, end } = getMonthRange(-1)); }
-            else if (timeframe === "this_week") { ({ start, end } = getWeekRange(0)); }
-            else if (timeframe === "last_week") { ({ start, end } = getWeekRange(-1)); }
-            else {
-              start = new Date("2000-01-01");
-              end = new Date("2099-12-31");
-            }
-
-            let where: any = {
-              userId: user.id,
-              date: { gte: start, lte: end },
-            };
-
-            if (categoryOrKeyword) {
-              where = {
-                ...where,
-                OR: [
-                  { description: { contains: categoryOrKeyword } },
-                  { merchant: { contains: categoryOrKeyword } },
-                  { category: { name: { contains: categoryOrKeyword } } },
-                ],
-              };
-            }
-
-            const totalObj = await prisma.expense.aggregate({
-              where,
-              _sum: { amount: true },
-            });
-
-            const total = totalObj._sum.amount ?? 0;
-
-            if (!returnList) {
-              return { success: true, totalSpent: total, currency: "INR" };
-            }
-
-            const items = await prisma.expense.findMany({
-              where,
-              orderBy: { amount: "desc" },
-              take: limit,
-              include: { category: true },
-            });
-
-            const formattedItems = items.map(e => ({
-              id: e.id,
-              amount: e.amount,
-              date: e.date.toISOString().slice(0, 10),
-              merchant: e.merchant,
-              description: e.description,
-              category: e.category?.name ?? "Uncategorized",
-            }));
-
-            return { success: true, totalSpent: total, items: formattedItems };
-          } catch (error) {
-            console.error("Query expenses error:", error);
-            return { success: false, error: "Failed to query expenses" };
-          }
-        },
-      }),
-
-      update_expense: tool({
-        description: "Update an existing expense.",
-        parameters: z.object({
-          id: z.string(),
-          newAmount: z.number().optional(),
-          newCategory: z.string().optional(),
-        }),
-        execute: async ({ id, newAmount, newCategory }) => {
-          try {
-            const expense = await prisma.expense.findFirst({
-              where: { id, userId: user.id },
-            });
-
-            if (!expense) {
-              return { success: false, error: "Expense not found." };
-            }
-
-            let categoryId = expense.categoryId;
-
-            if (newCategory) {
-              const categoryName = newCategory.charAt(0).toUpperCase() + newCategory.slice(1);
-              let cat = await prisma.category.findFirst({
-                where: { name: categoryName, OR: [{ userId: user.id }, { userId: null }] },
-              });
-              if (!cat) {
-                cat = await prisma.category.create({
-                  data: { name: categoryName, type: "expense", userId: user.id },
-                });
-              }
-              categoryId = cat.id;
-            }
-
-            const updated = await prisma.expense.update({
-              where: { id },
-              data: {
-                amount: newAmount ?? expense.amount,
-                categoryId,
-              },
-            });
-
-            if (newCategory) {
-              await updateMerchantProfileFromExpense({
-                userId: user.id,
-                merchant: updated.merchant,
-                categoryId: updated.categoryId,
-                recurringLikely: updated.isRecurring,
-              });
-            }
-
-            return { success: true, updatedExpense: { id: updated.id, amount: updated.amount, newCategoryId: categoryId } };
-          } catch (error) {
-            console.error("Update expense error:", error);
-            return { success: false, error: "Failed to update expense" };
-          }
-        },
-      }),
-    };
-
-    const { text, toolResults, finishReason } = await generateText({
-      model: openai("gpt-4o-mini"),
-      system: systemInstruction,
-      messages,
-      tools,
-      maxSteps: 5,
-    });
-
-    return NextResponse.json({
-      reply: text,
-      toolResults: toolResults?.map((t: any) => ({
-        toolName: t.toolName,
-        result: t.result
-      })),
-      finishReason
+    return NextResponse.json({ 
+      reply,
+      shouldRefresh 
     });
 
   } catch (error) {
     console.error("Chat API Error:", error);
     
-    // More detailed error handling
+    let errorMessage = "I'm having trouble processing your request right now.";
     if (error instanceof Error) {
-      return NextResponse.json({
-        reply: `I encountered an error: ${error.message}. Please try rephrasing your request.`
-      });
+      errorMessage = error.message;
     }
     
     return NextResponse.json({
-      reply: "I'm having trouble processing your request right now. Please try again."
+      reply: `I encountered an error: ${errorMessage}. Please try rephrasing your request.`
     }, { status: 500 });
   }
 }
