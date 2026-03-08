@@ -19,7 +19,7 @@ export * as $Enums from './enums'
 export * from './enums';
 /**
  * Model User
- * 
+ * ------------  DATA SOURCE  ------------
  */
 export type User = Prisma.UserModel
 /**

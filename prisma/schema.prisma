@@ -1,16 +1,13 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated"
-  engineType = "library"
+  provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
+// Your models remain exactly the same...
 model User {
   id           String    @id @default(cuid())
   email        String    @unique
@@ -58,11 +55,8 @@ model Expense {
   paymentMethod String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
-  /// ISO 4217 currency code, e.g. "INR", "USD"
   currency      String    @default("INR")
-  /// Flag indicating this expense is part of a recurring pattern
   isRecurring   Boolean   @default(false)
-  /// Optional human-readable recurrence rule, e.g. "monthly", "weekly"
   recurringRule String?
 }
 
@@ -72,21 +66,18 @@ model Budget {
   userId     String
   category   Category? @relation(fields: [categoryId], references: [id])
   categoryId String?
-  /// Month identifier in the form "YYYY-MM"
   month      String
   amount     Float
-  createdAt  DateTime  @default(now())
+  createdAt  DateTime @default(now())
 }
 
 model MerchantProfile {
-  id                  String    @id @default(cuid())
-  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                  String   @id @default(cuid())
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId              String
-  /// Normalized merchant name used for lookups
   merchant            String
   suggestedCategory   Category? @relation(fields: [suggestedCategoryId], references: [id])
   suggestedCategoryId String?
-  /// Whether expenses for this merchant are likely to be recurring
   recurringLikely     Boolean   @default(false)
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt

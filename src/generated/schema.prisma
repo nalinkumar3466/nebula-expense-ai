@@ -1,0 +1,87 @@
+// prisma/schema.prisma
+generator client {
+  provider   = "prisma-client-js"
+  output     = "../src/generated"
+  engineType = "library"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String?
+  passwordHash String
+  createdAt    DateTime @default(now())
+
+  expenses         Expense[]
+  budgets          Budget[]
+  sessions         Session[]
+  categories       Category[]
+  merchantProfiles MerchantProfile[]
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+}
+
+model Category {
+  id     String  @id @default(cuid())
+  name   String
+  type   String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String?
+
+  expenses         Expense[]
+  budgets          Budget[]
+  merchantProfiles MerchantProfile[]
+}
+
+model Expense {
+  id            String    @id @default(cuid())
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId        String
+  category      Category? @relation(fields: [categoryId], references: [id])
+  categoryId    String?
+  amount        Float
+  date          DateTime
+  description   String?
+  merchant      String?
+  paymentMethod String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  currency      String    @default("INR")
+  isRecurring   Boolean   @default(false)
+  recurringRule String?
+}
+
+model Budget {
+  id         String    @id @default(cuid())
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+  category   Category? @relation(fields: [categoryId], references: [id])
+  categoryId String?
+  month      String
+  amount     Float
+  createdAt  DateTime  @default(now())
+}
+
+model MerchantProfile {
+  id                  String    @id @default(cuid())
+  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId              String
+  merchant            String
+  suggestedCategory   Category? @relation(fields: [suggestedCategoryId], references: [id])
+  suggestedCategoryId String?
+  recurringLikely     Boolean   @default(false)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  @@unique([userId, merchant])
+}

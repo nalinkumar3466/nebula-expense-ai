@@ -478,6 +478,7 @@ export type MerchantProfileCreateOrConnectWithoutUserInput = {
 
 export type MerchantProfileCreateManyUserInputEnvelope = {
   data: Prisma.MerchantProfileCreateManyUserInput | Prisma.MerchantProfileCreateManyUserInput[]
+  skipDuplicates?: boolean
 }
 
 export type MerchantProfileUpsertWithWhereUniqueWithoutUserInput = {
@@ -534,6 +535,7 @@ export type MerchantProfileCreateOrConnectWithoutSuggestedCategoryInput = {
 
 export type MerchantProfileCreateManySuggestedCategoryInputEnvelope = {
   data: Prisma.MerchantProfileCreateManySuggestedCategoryInput | Prisma.MerchantProfileCreateManySuggestedCategoryInput[]
+  skipDuplicates?: boolean
 }
 
 export type MerchantProfileUpsertWithWhereUniqueWithoutSuggestedCategoryInput = {
@@ -695,14 +697,8 @@ export type $MerchantProfilePayload<ExtArgs extends runtime.Types.Extensions.Int
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     userId: string
-    /**
-     * Normalized merchant name used for lookups
-     */
     merchant: string
     suggestedCategoryId: string | null
-    /**
-     * Whether expenses for this merchant are likely to be recurring
-     */
     recurringLikely: boolean
     createdAt: Date
     updatedAt: Date
@@ -1367,6 +1363,7 @@ export type MerchantProfileCreateManyArgs<ExtArgs extends runtime.Types.Extensio
    * The data used to create many MerchantProfiles.
    */
   data: Prisma.MerchantProfileCreateManyInput | Prisma.MerchantProfileCreateManyInput[]
+  skipDuplicates?: boolean
 }
 
 /**
@@ -1385,6 +1382,7 @@ export type MerchantProfileCreateManyAndReturnArgs<ExtArgs extends runtime.Types
    * The data used to create many MerchantProfiles.
    */
   data: Prisma.MerchantProfileCreateManyInput | Prisma.MerchantProfileCreateManyInput[]
+  skipDuplicates?: boolean
   /**
    * Choose, which related nodes to fetch as well
    */

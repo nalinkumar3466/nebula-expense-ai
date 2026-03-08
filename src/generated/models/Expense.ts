@@ -672,6 +672,7 @@ export type ExpenseCreateOrConnectWithoutUserInput = {
 
 export type ExpenseCreateManyUserInputEnvelope = {
   data: Prisma.ExpenseCreateManyUserInput | Prisma.ExpenseCreateManyUserInput[]
+  skipDuplicates?: boolean
 }
 
 export type ExpenseUpsertWithWhereUniqueWithoutUserInput = {
@@ -746,6 +747,7 @@ export type ExpenseCreateOrConnectWithoutCategoryInput = {
 
 export type ExpenseCreateManyCategoryInputEnvelope = {
   data: Prisma.ExpenseCreateManyCategoryInput | Prisma.ExpenseCreateManyCategoryInput[]
+  skipDuplicates?: boolean
 }
 
 export type ExpenseUpsertWithWhereUniqueWithoutCategoryInput = {
@@ -987,17 +989,8 @@ export type $ExpensePayload<ExtArgs extends runtime.Types.Extensions.InternalArg
     paymentMethod: string | null
     createdAt: Date
     updatedAt: Date
-    /**
-     * ISO 4217 currency code, e.g. "INR", "USD"
-     */
     currency: string
-    /**
-     * Flag indicating this expense is part of a recurring pattern
-     */
     isRecurring: boolean
-    /**
-     * Optional human-readable recurrence rule, e.g. "monthly", "weekly"
-     */
     recurringRule: string | null
   }, ExtArgs["result"]["expense"]>
   composites: {}
@@ -1666,6 +1659,7 @@ export type ExpenseCreateManyArgs<ExtArgs extends runtime.Types.Extensions.Inter
    * The data used to create many Expenses.
    */
   data: Prisma.ExpenseCreateManyInput | Prisma.ExpenseCreateManyInput[]
+  skipDuplicates?: boolean
 }
 
 /**
@@ -1684,6 +1678,7 @@ export type ExpenseCreateManyAndReturnArgs<ExtArgs extends runtime.Types.Extensi
    * The data used to create many Expenses.
    */
   data: Prisma.ExpenseCreateManyInput | Prisma.ExpenseCreateManyInput[]
+  skipDuplicates?: boolean
   /**
    * Choose, which related nodes to fetch as well
    */

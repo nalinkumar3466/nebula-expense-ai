@@ -1,27 +1,14 @@
-import { PrismaClient } from "@/generated/client";
-import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
+// src/lib/prisma.ts
+import { PrismaClient } from '@prisma/client'
 
-// Use a single DB connection + adapter
-const adapter = new PrismaBetterSqlite3({ url: "file:./dev.db" });
-
-const prismaClientSingleton = () => {
-  return new PrismaClient({
-    adapter, // driver adapter for better-sqlite3
-    // log: ["query", "info", "warn", "error"], // uncomment for debugging
-  });
-};
-
-// Prevent multiple instances in dev (Next HMR)
-declare global {
-  // eslint-disable-next-line no-var
-  var prisma: undefined | ReturnType<typeof prismaClientSingleton>;
+const globalForPrisma = globalThis as unknown as {
+  prisma: PrismaClient | undefined
 }
 
-const prisma = globalThis.prisma ?? prismaClientSingleton();
+export const prisma = globalForPrisma.prisma ?? new PrismaClient()
 
-if (process.env.NODE_ENV !== "production") {
-  globalThis.prisma = prisma;
+if (process.env.NODE_ENV !== 'production') {
+  globalForPrisma.prisma = prisma
 }
 
-export default prisma;
-
+export default prisma
