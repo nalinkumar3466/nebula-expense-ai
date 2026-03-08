@@ -1,0 +1,95 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated"
+  engineType = "library"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  name         String?
+  passwordHash String
+  createdAt    DateTime  @default(now())
+
+  expenses         Expense[]
+  budgets          Budget[]
+  sessions         Session[]
+  categories       Category[]
+  merchantProfiles MerchantProfile[]
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+}
+
+model Category {
+  id       String   @id @default(cuid())
+  name     String
+  type     String?
+  user     User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId   String?
+
+  expenses         Expense[]
+  budgets          Budget[]
+  merchantProfiles MerchantProfile[]
+}
+
+model Expense {
+  id            String    @id @default(cuid())
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId        String
+  category      Category? @relation(fields: [categoryId], references: [id])
+  categoryId    String?
+  amount        Float
+  date          DateTime
+  description   String?
+  merchant      String?
+  paymentMethod String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  /// ISO 4217 currency code, e.g. "INR", "USD"
+  currency      String    @default("INR")
+  /// Flag indicating this expense is part of a recurring pattern
+  isRecurring   Boolean   @default(false)
+  /// Optional human-readable recurrence rule, e.g. "monthly", "weekly"
+  recurringRule String?
+}
+
+model Budget {
+  id         String    @id @default(cuid())
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+  category   Category? @relation(fields: [categoryId], references: [id])
+  categoryId String?
+  /// Month identifier in the form "YYYY-MM"
+  month      String
+  amount     Float
+  createdAt  DateTime  @default(now())
+}
+
+model MerchantProfile {
+  id                  String    @id @default(cuid())
+  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId              String
+  /// Normalized merchant name used for lookups
+  merchant            String
+  suggestedCategory   Category? @relation(fields: [suggestedCategoryId], references: [id])
+  suggestedCategoryId String?
+  /// Whether expenses for this merchant are likely to be recurring
+  recurringLikely     Boolean   @default(false)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  @@unique([userId, merchant])
+}

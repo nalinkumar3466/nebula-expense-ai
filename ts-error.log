@@ -1,0 +1,58 @@
+﻿src/app/api/chat/route.ts(2,30): error TS2305: Module '"ai"' has no exported member 'CoreMessage'.
+src/app/api/chat/route.ts(74,7): error TS2353: Object literal may only specify known properties, and 'maxSteps' does not exist in type 'CallSettings & { system?: string | SystemModelMessage | SystemModelMessage[] | undefined; } & { messages: ModelMessage[]; prompt?: undefined; } & { ...; }'.
+src/app/api/chat/route.ts(90,11): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Type '({ expenses }: { expenses: any; }) => Promise<{ success: boolean; addedCount: number; totalAmountAdded: number; expenses: { id: string; amount: any; description: any; }[]; }>' is not assignable to type 'undefined'.
+src/app/api/chat/route.ts(90,29): error TS7031: Binding element 'expenses' implicitly has an 'any' type.
+src/app/api/chat/route.ts(127,19): error TS2353: Object literal may only specify known properties, and 'currency' does not exist in type 'Without<ExpenseCreateInput, ExpenseUncheckedCreateInput> & ExpenseUncheckedCreateInput'.
+src/app/api/chat/route.ts(141,19): error TS2353: Object literal may only specify known properties, and 'isRecurring' does not exist in type '(Without<ExpenseUpdateInput, ExpenseUncheckedUpdateInput> & ExpenseUncheckedUpdateInput) | (Without<...> & ExpenseUpdateInput)'.
+src/app/api/chat/route.ts(169,11): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Type '({ timeframe, categoryOrKeyword, limit, returnList }: { timeframe: any; categoryOrKeyword: any; limit: any; returnList: any; }) => Promise<{ success: boolean; totalSpent: number; currency: string; items?: undefined; } | { success: boolean; totalSpent: number; items: { ...; }[]; currency?: undefined; }>' is not assignable to type 'undefined'.
+src/app/api/chat/route.ts(169,29): error TS7031: Binding element 'timeframe' implicitly has an 'any' type.
+src/app/api/chat/route.ts(169,40): error TS7031: Binding element 'categoryOrKeyword' implicitly has an 'any' type.
+src/app/api/chat/route.ts(169,59): error TS7031: Binding element 'limit' implicitly has an 'any' type.
+src/app/api/chat/route.ts(169,66): error TS7031: Binding element 'returnList' implicitly has an 'any' type.
+src/app/api/chat/route.ts(236,11): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Type '({ id, newAmount, newCategory }: { id: any; newAmount: any; newCategory: any; }) => Promise<{ success: boolean; error: string; updatedExpense?: undefined; } | { success: boolean; updatedExpense: { id: string; amount: number; newCategoryId: string | null; }; error?: undefined; }>' is not assignable to type 'undefined'.
+src/app/api/chat/route.ts(236,29): error TS7031: Binding element 'id' implicitly has an 'any' type.
+src/app/api/chat/route.ts(236,33): error TS7031: Binding element 'newAmount' implicitly has an 'any' type.
+src/app/api/chat/route.ts(236,44): error TS7031: Binding element 'newCategory' implicitly has an 'any' type.
+src/app/api/chat/route.ts(273,42): error TS2339: Property 'isRecurring' does not exist on type '{ id: string; createdAt: Date; userId: string; categoryId: string | null; amount: number; date: Date; description: string | null; merchant: string | null; paymentMethod: string | null; updatedAt: Date; }'.
+src/app/api/chat/route.ts(288,11): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Type '({ ids, timeframe, keyword }: { ids: any; timeframe: any; keyword: any; }) => Promise<{ success: boolean; deletedCount: number; msg: string; error?: undefined; } | { success: boolean; error: string; deletedCount?: undefined; msg?: undefined; }>' is not assignable to type 'undefined'.
+src/app/api/chat/route.ts(288,29): error TS7031: Binding element 'ids' implicitly has an 'any' type.
+src/app/api/chat/route.ts(288,34): error TS7031: Binding element 'timeframe' implicitly has an 'any' type.
+src/app/api/chat/route.ts(288,45): error TS7031: Binding element 'keyword' implicitly has an 'any' type.
+src/app/api/chat/route.ts(325,11): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Type '() => Promise<{ thisMonthTotal: number; lastMonthTotal: number; topCategories: any[]; budgets: { category: string; spent: number; budgetAmount: number; }[]; }>' is not assignable to type 'undefined'.
+src/app/api/expenses/[id]/route.ts(38,9): error TS2353: Object literal may only specify known properties, and 'isRecurring' does not exist in type 'Without<ExpenseUpdateInput, ExpenseUncheckedUpdateInput> & ExpenseUncheckedUpdateInput'.
+src/app/api/expenses/[id]/route.ts(39,69): error TS2339: Property 'isRecurring' does not exist on type '{ id: string; createdAt: Date; userId: string; categoryId: string | null; amount: number; date: Date; description: string | null; merchant: string | null; paymentMethod: string | null; updatedAt: Date; }'.
+src/app/api/expenses/[id]/route.ts(47,32): error TS2339: Property 'isRecurring' does not exist on type '{ id: string; createdAt: Date; userId: string; categoryId: string | null; amount: number; date: Date; description: string | null; merchant: string | null; paymentMethod: string | null; updatedAt: Date; }'.
+src/app/api/expenses/route.ts(60,9): error TS2353: Object literal may only specify known properties, and 'currency' does not exist in type 'Without<ExpenseCreateInput, ExpenseUncheckedCreateInput> & ExpenseUncheckedCreateInput'.
+src/app/api/expenses/route.ts(74,9): error TS2353: Object literal may only specify known properties, and 'isRecurring' does not exist in type '(Without<ExpenseUpdateInput, ExpenseUncheckedUpdateInput> & ExpenseUncheckedUpdateInput) | (Without<...> & ExpenseUpdateInput)'.
+src/components/CategoryChart.tsx(36,13): error TS2322: Type '(value: number) => [string, string]' is not assignable to type 'Formatter<ValueType, NameType> & ((value: ValueType, name: NameType, item: TooltipPayloadEntry, index: number, payload: TooltipPayload) => ReactNode | [...])'.
+  Type '(value: number) => [string, string]' is not assignable to type 'Formatter<ValueType, NameType>'.
+    Types of parameters 'value' and 'value' are incompatible.
+      Type 'ValueType | undefined' is not assignable to type 'number'.
+        Type 'undefined' is not assignable to type 'number'.
+src/components/ChatPanel.tsx(4,25): error TS2307: Cannot find module 'ai/react' or its corresponding type declarations.
+src/components/ChatPanel.tsx(16,15): error TS7006: Parameter 'err' implicitly has an 'any' type.
+src/components/ChatPanel.tsx(102,28): error TS7006: Parameter 'm' implicitly has an 'any' type.
+src/components/ChatPanel.tsx(102,59): error TS7006: Parameter 'm' implicitly has an 'any' type.
+src/components/Dashboard.tsx(124,17): error TS2304: Cannot find name 'CategoryChart'.
+src/components/ExpenseTable.tsx(111,9): error TS2339: Property 'currency' does not exist on type '{ id: string; createdAt: Date; userId: string; categoryId: string | null; amount: number; date: Date; description: string | null; merchant: string | null; paymentMethod: string | null; updatedAt: Date; } & { ...; }'.
+src/components/ExpenseTable.tsx(112,9): error TS2339: Property 'isRecurring' does not exist on type '{ id: string; createdAt: Date; userId: string; categoryId: string | null; amount: number; date: Date; description: string | null; merchant: string | null; paymentMethod: string | null; updatedAt: Date; } & { ...; }'.
+src/components/ExpenseTable.tsx(148,34): error TS2339: Property 'currency' does not exist on type '{ id: string; createdAt: Date; userId: string; categoryId: string | null; amount: number; date: Date; description: string | null; merchant: string | null; paymentMethod: string | null; updatedAt: Date; } & { ...; }'.
+src/components/ExpenseTable.tsx(149,11): error TS2339: Property 'isRecurring' does not exist on type '{ id: string; createdAt: Date; userId: string; categoryId: string | null; amount: number; date: Date; description: string | null; merchant: string | null; paymentMethod: string | null; updatedAt: Date; } & { ...; }'.
+src/components/ExpenseTable.tsx(274,67): error TS2339: Property 'isRecurring' does not exist on type '{ id: string; createdAt: Date; userId: string; categoryId: string | null; amount: number; date: Date; description: string | null; merchant: string | null; paymentMethod: string | null; updatedAt: Date; } & { ...; }'.
+src/components/ExpenseTable.tsx(277,33): error TS2339: Property 'isRecurring' does not exist on type '{ id: string; createdAt: Date; userId: string; categoryId: string | null; amount: number; date: Date; description: string | null; merchant: string | null; paymentMethod: string | null; updatedAt: Date; } & { ...; }'.
+src/components/ExpenseTable.tsx(282,32): error TS2339: Property 'isRecurring' does not exist on type '{ id: string; createdAt: Date; userId: string; categoryId: string | null; amount: number; date: Date; description: string | null; merchant: string | null; paymentMethod: string | null; updatedAt: Date; } & { ...; }'.
+src/components/ExpenseTable.tsx(286,59): error TS2339: Property 'currency' does not exist on type '{ id: string; createdAt: Date; userId: string; categoryId: string | null; amount: number; date: Date; description: string | null; merchant: string | null; paymentMethod: string | null; updatedAt: Date; } & { ...; }'.
+src/lib/expense-insights.ts(82,33): error TS2339: Property 'merchantProfile' does not exist on type 'PrismaClient<never, GlobalOmitConfig | undefined, DefaultArgs>'.
+src/lib/expense-insights.ts(87,18): error TS2339: Property 'merchantProfile' does not exist on type 'PrismaClient<never, GlobalOmitConfig | undefined, DefaultArgs>'.
+src/lib/expense-insights.ts(98,16): error TS2339: Property 'merchantProfile' does not exist on type 'PrismaClient<never, GlobalOmitConfig | undefined, DefaultArgs>'.
+src/lib/expense-insights.ts(127,32): error TS2339: Property 'merchantProfile' does not exist on type 'PrismaClient<never, GlobalOmitConfig | undefined, DefaultArgs>'.
